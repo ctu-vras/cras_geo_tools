@@ -165,6 +165,12 @@ rclcpp_components_register_node(cartesian_to_spherical PLUGIN "cras_geo_tools::C
   EXECUTABLE cartesian_to_spherical_polygon)
 rclcpp_components_register_node(cartesian_to_spherical PLUGIN "cras_geo_tools::CartesianToSphericalPolygonCollection"
   EXECUTABLE cartesian_to_spherical_polygon_collection)
+if(message_filters_VERSION VERSION_LESS 7.1.0)
+  target_compile_definitions(cartesian_to_spherical PRIVATE -DMESSAGE_FILTERS_DONT_HAVE_NODE_INTERFACES=1)
+endif()
+if(message_filters_VERSION VERSION_LESS 5.0.0)
+  target_compile_definitions(cartesian_to_spherical PRIVATE -DMESSAGE_FILTERS_USE_RMW_QOS=1)
+endif()
 list(APPEND EXPORTED_LIBS cartesian_to_spherical)
 
 add_library(planar_to_spherical SHARED src/planar_to_spherical.cpp)

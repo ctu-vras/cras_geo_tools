@@ -47,7 +47,16 @@ public:
 
     pub_ = create_publisher<Spherical>("spherical", qos);
 
+#ifndef MESSAGE_FILTERS_USE_RMW_QOS
+#ifndef MESSAGE_FILTERS_DONT_HAVE_NODE_INTERFACES
+    sub_.subscribe(*this, "cartesian", qos);
+#else
+    sub_.subscribe(this, "cartesian", qos);
+#endif
+#else
     sub_.subscribe(this, "cartesian", qos.get_rmw_qos_profile());
+#endif
+
     tf_filter_ = std::make_unique<tf2_ros::MessageFilter<Cartesian>>(
       sub_, *tf_, ecef_frame_, 10, get_node_logging_interface(), get_node_clock_interface(), tf_timeout_);
     tf_filter_->registerCallback(
