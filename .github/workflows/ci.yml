@@ -28,6 +28,7 @@ jobs:
     name: "${{ matrix.env.ROS_DISTRO }}-${{ matrix.os }}"
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache # Directory for ccache (and how we enable ccache in industrial_ci)
+      UPSTREAM_WORKSPACE: .github/ci.rosinstall
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
