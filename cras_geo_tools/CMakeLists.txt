@@ -91,7 +91,7 @@ target_link_libraries(convert_2d_3d
 )
 list(APPEND EXPORTED_LIBS convert_2d_3d)
 
-add_library(spherical_to_cartesian SHARED src/spherical_to_cartesian.cpp)
+add_library(spherical_to_cartesian SHARED nodes/spherical_to_cartesian.cpp)
 target_link_libraries(spherical_to_cartesian
   PUBLIC
     convert_ecef
@@ -118,7 +118,7 @@ rclcpp_components_register_node(spherical_to_cartesian PLUGIN "cras_geo_tools::S
   EXECUTABLE spherical_to_cartesian_polygon_collection)
 list(APPEND EXPORTED_LIBS spherical_to_cartesian)
 
-add_library(spherical_to_planar SHARED src/spherical_to_planar.cpp)
+add_library(spherical_to_planar SHARED nodes/spherical_to_planar.cpp)
 target_link_libraries(spherical_to_planar
   PUBLIC
     convert_2d_3d
@@ -140,7 +140,7 @@ rclcpp_components_register_node(spherical_to_planar PLUGIN "cras_geo_tools::Sphe
   EXECUTABLE spherical_to_planar_polygon_stamped)
 list(APPEND EXPORTED_LIBS spherical_to_planar)
 
-add_library(cartesian_to_spherical SHARED src/cartesian_to_spherical.cpp)
+add_library(cartesian_to_spherical SHARED nodes/cartesian_to_spherical.cpp)
 target_link_libraries(cartesian_to_spherical
   PUBLIC
     convert_ecef
@@ -173,7 +173,7 @@ if(message_filters_VERSION VERSION_LESS 5.0.0)
 endif()
 list(APPEND EXPORTED_LIBS cartesian_to_spherical)
 
-add_library(planar_to_spherical SHARED src/planar_to_spherical.cpp)
+add_library(planar_to_spherical SHARED nodes/planar_to_spherical.cpp)
 target_link_libraries(planar_to_spherical
   PUBLIC
     convert_2d_3d
