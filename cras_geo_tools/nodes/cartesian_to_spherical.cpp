@@ -26,6 +26,15 @@
 #include <tf2_ros/message_filter.hpp>
 #include <tf2_ros/transform_listener.hpp>
 
+#if !__has_include(<tf2_ros/version.h>)
+#define TF2_ROS_USES_DEPRECATED_API
+#else
+#include <tf2_ros/version.h>
+#if !TF2_ROS_VERSION_GTE(0, 46, 2)
+#define TF2_ROS_USES_DEPRECATED_API
+#endif
+#endif
+
 namespace cras_geo_tools {
 
 template<typename Cartesian, typename Spherical>
@@ -57,8 +66,12 @@ public:
     sub_.subscribe(this, "cartesian", qos.get_rmw_qos_profile());
 #endif
 
+#ifndef TF2_ROS_USES_DEPRECATED_API
+    tf_filter_ = std::make_unique<tf2_ros::MessageFilter<Cartesian>>(sub_, *tf_, ecef_frame_, 10, *this, tf_timeout_);
+#else
     tf_filter_ = std::make_unique<tf2_ros::MessageFilter<Cartesian>>(
       sub_, *tf_, ecef_frame_, 10, get_node_logging_interface(), get_node_clock_interface(), tf_timeout_);
+#endif
     tf_filter_->registerCallback(
         [this](const typename Cartesian::ConstSharedPtr& src_frame_msg) {
           try {
