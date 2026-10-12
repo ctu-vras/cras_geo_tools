@@ -15,7 +15,8 @@ Cartesian coordinates (the global ECEF frame and local planar frames). Next to p
 
 It is split into small, dependency-light C++ libraries that do all the actual work, and on top of them there are thin
 `rclcpp_components` nodes that wrap the libraries for convenient use inside a ROS graph (with TF2 lookups handled
-automatically).
+automatically). The nodes are complemented by two small Python scripts that import and export the areas as GPX files,
+and by launch files that visualize the polygons in RViz.
 
 ## Table of Contents
 
@@ -28,8 +29,10 @@ automatically).
   * [Available nodes and components](#available-nodes-and-components)
   * [Parameters](#parameters)
   * [Running the nodes](#running-the-nodes)
+  * [GPX import and export](#gpx-import-and-export)
+  * [Launch files](#launch-files)
 * [Building and testing](#building-and-testing)
-* [Support status](#support-status)
+* [ROS versions support](#ros-versions-support)
 * [License](#license)
 
 ## Coordinate conventions
@@ -39,7 +42,7 @@ The package works with three "domains" of coordinates:
 | Domain | Message types | Coordinates | Frame ID written to headers |
 |---|---|---|---|
 | Spherical (geodetic) | `geographic_msgs/GeoPoint`, `GeoPointStamped`, `GeoPose`, `GeoPoseStamped`, `cras_geo_msgs/GeoPolygon2D`, `GeoPolygon2DCollection` | latitude and longitude in **degrees**, altitude in metres above the WGS-84 ellipsoid | `wgs84` |
-| Global Cartesian | `geometry_msgs/Point`, `Point32`, `PointStamped`, `Pose`, `PoseStamped`, `Polygon`, `PolygonStamped`, `PolygonInstance`, `PolygonInstanceStamped`, `cras_geo_msgs/PolygonCollection`, `PolygonStampedCollection`, `PolygonInstanceCollection`, `PolygonInstanceStampedCollection` | ECEF metres | `ecef` |
+| Global Cartesian | `geometry_msgs/Point`, `Point32`, `PointStamped`, `Pose`, `PoseStamped`, `Polygon`, `PolygonStamped`, `PolygonInstance`, `PolygonInstanceStamped`, `cras_geo_msgs/PolygonCollection`, `PolygonStampedCollection`, `PolygonInstanceCollection`, `PolygonInstanceStampedCollection`, `Polygon64`, `Polygon64Stamped`, `Polygon64Instance`, `Polygon64InstanceStamped`, `Polygon64Collection`, `Polygon64StampedCollection`, `Polygon64InstanceCollection`, `Polygon64InstanceStampedCollection` | ECEF metres | `ecef` |
 | Local planar (2D) | `polygon_msgs/Point2D`, `Polygon2D`, `Polygon2DStamped`, `Polygon2DCollection`, `ComplexPolygon2D`, `ComplexPolygon2DStamped`, `ComplexPolygon2DCollection` | metres in an arbitrary local frame | taken from the TF transform |
 
 A few properties worth knowing when converting:
@@ -48,7 +51,9 @@ A few properties worth knowing when converting:
   ECEF is therefore usually not planar in the spherical domain anymore (and vice versa), and polygons that cross the
   antimeridian or contain a pole keep their vertices as they are.
 * `Polygon`-family messages use single-precision (`float32`) vertices. Their ECEF resolution is in units of decimetres,
-  which limits the accuracy of the resulting latitude/longitude. Double-precision types are used wherever possible.
+  which limits the accuracy of the resulting latitude/longitude. Double-precision types are used wherever possible - the
+  `cras_geo_msgs/Polygon64*` family holds the vertices as `geometry_msgs/Point` (`float64`) and is the one used by the
+  geodetic conversions.
 * Only the position is converted for poses - the orientation is passed through unchanged. It is **not** rotated
   between the ECEF frame and any local-level (ENU-like) frame.
 * Instance IDs and per-polygon headers are dropped when the destination type has no field for them.
@@ -71,10 +76,6 @@ Individual targets (all prefixed with `cras_geo_tools::`):
 | `convert_2d_3d` | `cras_geo_tools/convert_2d_3d.hpp` | 2D ↔ 3D polygon conversions |
 | `tf2_polygon_msgs` | `cras_geo_tools/tf2_polygon_msgs.hpp` | `tf2::doTransform()` for polygon messages |
 | `cras_geo_tools` | – | convenience target linking all of the above |
-
-The nodes are exported under the same names as their libraries (`spherical_to_cartesian`,
-`cartesian_to_spherical`, `spherical_to_planar`, `planar_to_spherical`), so their classes can also be re-used
-directly.
 
 ### ECEF ↔ spherical conversions
 
@@ -133,14 +134,16 @@ Including `cras_geo_tools/tf2_polygon_msgs.hpp` (and linking `cras_geo_tools::tf
 * `geometry_msgs`: `PolygonInstance`, `PolygonInstanceStamped` (plain `Polygon`/`PolygonStamped` are covered by
   `tf2_geometry_msgs`),
 * `cras_geo_msgs`: `PolygonCollection`, `PolygonStampedCollection`, `PolygonInstanceCollection`,
-  `PolygonInstanceStampedCollection`.
+  `PolygonInstanceStampedCollection`, and all `Polygon64*` types.
+
+`tf2::getTimestamp()` and `tf2::getFrameId()` are specialized for the stamped messages and collections as well, so they
+can be used e.g. inside `tf2_ros::MessageFilter`.
 
 ```cpp
+// Do not let auto-include optimizations remove this include. Most IDEs mark it as unused, but it is used.
 #include <cras_geo_tools/tf2_polygon_msgs.hpp>
 
-const auto transform = tf_buffer.lookupTransform(target_frame, msg.header.frame_id, msg.header.stamp, timeout);
-polygon_msgs::msg::Polygon2DCollection transformed;
-tf2::doTransform(msg, transformed, transform);
+const auto transformed = tf_buffer.transform(msg, target_frame, timeout);
 ```
 
 The 2D types are transformed as if their Z-coordinate was 0, and only the resulting X and Y are kept, so a transform
@@ -149,7 +152,7 @@ output messages are taken from the used transform, colors are always copied.
 
 ## ROS 2 nodes
 
-Each node subscribes to one topic, converts the message and republishes it on another topic. All of them are
+Each conversion node subscribes to one topic, converts the message and republishes it on another topic. All of them are
 implemented as `rclcpp_components` and also installed as stand-alone executables. They use a reliable QoS profile with
 a queue depth of 10 and perform the necessary TF2 lookups themselves; if the transform is not available within
 `tf_timeout`, the message is dropped and a warning is logged (the node keeps running).
@@ -175,14 +178,15 @@ The data flow of the individual directions is always
 | `cartesian_to_spherical_polygon` | `cartesian` | `cras_geo_msgs/Polygon64Stamped` | `spherical` | `cras_geo_msgs/GeoPolygon2D` |
 | `cartesian_to_spherical_polygon_collection` | `cartesian` | `cras_geo_msgs/Polygon64Collection` | `spherical` | `cras_geo_msgs/GeoPolygon2DCollection` |
 | `spherical_to_planar_polygon_stamped` | `spherical` | `cras_geo_msgs/GeoPolygon2D` | `planar` | `polygon_msgs/Polygon2DStamped` |
+| `spherical_to_planar_polygon_collection` | `spherical` | `cras_geo_msgs/GeoPolygon2DCollection` | `planar` | `polygon_msgs/Polygon2DCollection` |
 | `planar_to_spherical_polygon_stamped` | `planar` | `polygon_msgs/Polygon2DStamped` | `spherical` | `cras_geo_msgs/GeoPolygon2D` |
 | `planar_to_spherical_polygon_collection` | `planar` | `polygon_msgs/Polygon2DCollection` | `spherical` | `cras_geo_msgs/GeoPolygon2DCollection` |
 
 The executable `xxx_yyy` is always produced from a component class of a matching name - `cras_geo_tools::XxxYyy`
 (e.g. `cras_geo_tools::SphericalToCartesianPointStamped`) living in the library named after the direction
-(`spherical_to_cartesian` and so on). A few registered components have no dedicated executable -
-`cras_geo_tools::SphericalToPlanarPolygonCollection` and
-`cras_geo_tools::CartesianToSphericalPolygonStampedCollection` - and can be used only through the component container.
+(`spherical_to_cartesian` and so on). Only
+`cras_geo_tools::CartesianToSphericalPolygonStampedCollection` has no dedicated executable and can be used only through
+the component container.
 
 ### Parameters
 
@@ -219,6 +223,52 @@ $ ros2 component load /ComponentManager cras_geo_tools cras_geo_tools::Spherical
 All instances of one node type share the same default node name (`spherical_to_cartesian`,
 `cartesian_to_spherical`, `spherical_to_planar` or `planar_to_spherical`), which can be changed by the usual node-name
 remapping (`-r __node:=...` when running stand-alone, `-n` when loading a component).
+
+### GPX import and export
+
+Two Python scripts exchange the areas with the GPX file format:
+
+| Script | Direction | Topic | Message type |
+|---|---|---|---|
+| `gpx_to_ros` | GPX file → ROS | `polygons_wgs84` (published) | `cras_geo_msgs/GeoPolygon2DCollection` |
+| `ros_to_gpx` | ROS → GPX file | `polygons_wgs84` (subscribed) | `cras_geo_msgs/GeoPolygon2DCollection` |
+
+The GPX file is passed either as the only positional argument or via the `gpx_file` parameter; if neither is given, the
+node logs a fatal error and exits. The topic is published with a transient-local QoS and the messages use the `wgs84`
+frame, so a late-joining subscriber still gets the areas and the scripts can be combined with the launch files below.
+
+* `gpx_to_ros` parses the file when it starts and publishes the collection once (the stamp is the time of parsing); the
+  node then only keeps serving the latched message. Every GPX *track* becomes one `GeoPolygon2D`, with the points of all
+  its segments appended in order and `elevation` mapped to `altitude`.
+* `ros_to_gpx` (over)writes the whole file whenever a collection arrives: every polygon becomes one track with a single
+  segment, and the GPX `time` is taken from the message stamp.
+
+```console
+$ ros2 run cras_geo_tools gpx_to_ros ~/areas/no_go_zones.gpx
+$ ros2 run cras_geo_tools ros_to_gpx ~/areas/exported.gpx
+```
+
+The conversion is not lossless - GPX knows neither polygon holes nor per-polygon colors, and `gpx_to_ros` reads only
+the tracks (waypoints and routes are ignored) - so the scripts are meant for importing manually drawn areas and for
+exporting them for inspection in external tools.
+
+### Launch files
+
+| Launch file | Runs | Arguments |
+|---|---|---|
+| `rviz_geo_to_polygons.launch` | `spherical_to_planar_polygon_collection`, remapped `spherical` → `polygons_wgs84` and `planar` → `polygons` | `ecef_frame` (`ecef`), `planar_frame` (`map`), `latch` (`true`), `test` (`false`) |
+| `rviz_polygons_to_geo.launch` | `planar_to_spherical_polygon_collection`, remapped `planar` → `polygons` and `spherical` → `polygons_wgs84` | `ecef_frame` (`ecef`), `latch` (`true`), `test` (`false`) |
+
+```console
+$ ros2 launch cras_geo_tools rviz_geo_to_polygons.launch
+```
+
+Both files publish the converted polygons in a latched way under the topic names commonly used by the visualization and
+manipulation tools (e.g. `rviz_zone_of_interest_tool`). Setting `test:=true` additionally starts two
+`static_transform_publisher` instances (a fixed `ecef` → `planar_frame` transform and `planar_frame` → `base_link`) and
+RViz with the `polygons.rviz` configuration from `rviz_zone_of_interest_tool`, which is convenient for testing the
+conversion without a robot. `rviz_zone_of_interest_tool` is not a dependency of this package, so it has to be installed
+separately to use that mode.
 
 ## Building and testing
 
