@@ -201,6 +201,7 @@ list(APPEND EXPORTED_LIBS planar_to_spherical)
 
 install(PROGRAMS
   nodes/gpx_to_ros
+  nodes/ros_to_gpx
   DESTINATION lib/${PROJECT_NAME}
 )
 
