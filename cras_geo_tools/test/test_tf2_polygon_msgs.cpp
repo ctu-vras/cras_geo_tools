@@ -210,7 +210,7 @@ TEST(Tf2PolygonMsgs, Polygon2DStamped) {  // NOLINT
 
   // the header is taken from the transform, not from the input message
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
 
   ASSERT_EQ(3u, transformed.polygon.points.size());
   EXPECT_NEAR(1.0 - polygon.polygon.points[0].y, transformed.polygon.points[0].x, kTol);
@@ -234,7 +234,7 @@ TEST(Tf2PolygonMsgs, Polygon2DCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   // colors are not transformed, they are only copied
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
@@ -296,7 +296,7 @@ TEST(Tf2PolygonMsgs, ComplexPolygon2DStamped) {  // NOLINT
   tf2::doTransform(polygon, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
 
   ASSERT_EQ(3u, transformed.polygon.outer.points.size());
   EXPECT_NEAR(1.0 - polygon.polygon.outer.points[0].y, transformed.polygon.outer.points[0].x, kTol);
@@ -330,7 +330,7 @@ TEST(Tf2PolygonMsgs, ComplexPolygon2DCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   // colors are not transformed, they are only copied
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
@@ -389,7 +389,7 @@ TEST(Tf2PolygonMsgs, PolygonInstanceStamped) {  // NOLINT
   tf2::doTransform(polygon, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   EXPECT_EQ(polygon.polygon.id, transformed.polygon.id);
 
   ASSERT_EQ(3u, transformed.polygon.polygon.points.size());
@@ -414,7 +414,7 @@ TEST(Tf2PolygonMsgs, PolygonCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   // colors are not transformed, they are only copied
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
@@ -451,7 +451,7 @@ TEST(Tf2PolygonMsgs, PolygonInstanceCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
   EXPECT_EQ(8u, transformed.polygons[0].id);
@@ -487,7 +487,7 @@ TEST(Tf2PolygonMsgs, PolygonStampedCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
 
@@ -524,7 +524,7 @@ TEST(Tf2PolygonMsgs, PolygonInstanceStampedCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
   EXPECT_EQ(8u, transformed.polygons[0].polygon.id);
@@ -600,8 +600,8 @@ TEST(Tf2PolygonMsgs, Polygon64Stamped) {  // NOLINT
   auto transformed = cras_geo_msgs::msg::Polygon64Stamped();
   tf2::doTransform(polygon, transformed, tf);
 
-  // unlike the other stamped messages, this specialization keeps the header of the input message
-  EXPECT_EQ(polygon.header, transformed.header);
+  EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
 
   ASSERT_EQ(3u, transformed.polygon.points.size());
   EXPECT_NEAR(1.0 - polygon.polygon.points[0].y, transformed.polygon.points[0].x, kTol);
@@ -644,8 +644,8 @@ TEST(Tf2PolygonMsgs, Polygon64InstanceStamped) {  // NOLINT
   auto transformed = cras_geo_msgs::msg::Polygon64InstanceStamped();
   tf2::doTransform(polygon, transformed, tf);
 
-  // unlike the other stamped messages, this specialization keeps the header of the input message
-  EXPECT_EQ(polygon.header, transformed.header);
+  EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   EXPECT_EQ(polygon.polygon.id, transformed.polygon.id);
 
   ASSERT_EQ(3u, transformed.polygon.polygon.points.size());
@@ -670,7 +670,7 @@ TEST(Tf2PolygonMsgs, Polygon64Collection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   // colors are not transformed, they are only copied
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
@@ -707,7 +707,7 @@ TEST(Tf2PolygonMsgs, Polygon64InstanceCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
   EXPECT_EQ(8, transformed.polygons[0].id);
@@ -743,7 +743,7 @@ TEST(Tf2PolygonMsgs, Polygon64StampedCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
 
@@ -780,7 +780,7 @@ TEST(Tf2PolygonMsgs, Polygon64InstanceStampedCollection) {  // NOLINT
   tf2::doTransform(collection, transformed, tf);
 
   EXPECT_EQ(tf.header.stamp, transformed.header.stamp);
-  EXPECT_EQ(kChildFrame, transformed.header.frame_id);
+  EXPECT_EQ(kParentFrame, transformed.header.frame_id);
   EXPECT_EQ(collection.colors, transformed.colors);
   ASSERT_EQ(2u, transformed.polygons.size());
   EXPECT_EQ(8, transformed.polygons[0].polygon.id);

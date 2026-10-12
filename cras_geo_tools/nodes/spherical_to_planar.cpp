@@ -46,8 +46,10 @@ public:
       "spherical", qos,
         [this](const typename Spherical::ConstSharedPtr& msg) {
           const auto msg_3d_ecef = llhtoEcef<Spherical, Cartesian>(*msg);
+          auto msg_3d_ecef2 = msg_3d_ecef;
+          msg_3d_ecef2.header.frame_id = ecef_frame_;
           try {
-            const auto msg_3d_planar = tf_->transform(msg_3d_ecef, planar_frame_, tf_timeout_);
+            const auto msg_3d_planar = tf_->transform(msg_3d_ecef2, planar_frame_, tf_timeout_);
             const auto maybe_msg_2d = convert3DTo2D<Cartesian, Planar>(msg_3d_planar, {});
             if (maybe_msg_2d.has_value()) {
               pub_->publish(maybe_msg_2d.value());

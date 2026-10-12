@@ -54,8 +54,7 @@ template<>
 void doTransform(
     const polygon_msgs::msg::Polygon2DStamped& data_in, polygon_msgs::msg::Polygon2DStamped& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   doTransform(data_in.polygon, data_out.polygon, transform);
 }
 
@@ -63,8 +62,7 @@ template<>
 void doTransform(
     const polygon_msgs::msg::Polygon2DCollection& data_in, polygon_msgs::msg::Polygon2DCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -87,8 +85,7 @@ template<>
 void doTransform(
     const polygon_msgs::msg::ComplexPolygon2DStamped& data_in, polygon_msgs::msg::ComplexPolygon2DStamped& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   doTransform(data_in.polygon, data_out.polygon, transform);
 }
 
@@ -97,8 +94,7 @@ void doTransform(
     const polygon_msgs::msg::ComplexPolygon2DCollection& data_in,
     polygon_msgs::msg::ComplexPolygon2DCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -118,8 +114,7 @@ template<>
 void doTransform(
     const geometry_msgs::msg::PolygonInstanceStamped& data_in, geometry_msgs::msg::PolygonInstanceStamped& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   doTransform(data_in.polygon, data_out.polygon, transform);
 }
 
@@ -127,8 +122,7 @@ template<>
 void doTransform(
     const cras_geo_msgs::msg::PolygonCollection& data_in, cras_geo_msgs::msg::PolygonCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -141,8 +135,7 @@ void doTransform(
     const cras_geo_msgs::msg::PolygonInstanceCollection& data_in,
     cras_geo_msgs::msg::PolygonInstanceCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -155,8 +148,7 @@ void doTransform(
     const cras_geo_msgs::msg::PolygonInstanceStampedCollection& data_in,
     cras_geo_msgs::msg::PolygonInstanceStampedCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -169,8 +161,7 @@ void doTransform(
     const cras_geo_msgs::msg::PolygonStampedCollection& data_in,
     cras_geo_msgs::msg::PolygonStampedCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -201,7 +192,7 @@ template<>
 void doTransform(
     const cras_geo_msgs::msg::Polygon64InstanceStamped& data_in, cras_geo_msgs::msg::Polygon64InstanceStamped& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header = data_in.header;
+  data_out.header = transform.header;
   data_out.polygon.id = data_in.polygon.id;
   for (auto& point : data_in.polygon.polygon.points) {
     doTransform(point, data_out.polygon.polygon.points.emplace_back(), transform);
@@ -212,7 +203,7 @@ template<>
 void doTransform(
     const cras_geo_msgs::msg::Polygon64Stamped& data_in, cras_geo_msgs::msg::Polygon64Stamped& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header = data_in.header;
+  data_out.header = transform.header;
   for (auto& point : data_in.polygon.points) {
     doTransform(point, data_out.polygon.points.emplace_back(), transform);
   }
@@ -222,8 +213,7 @@ template<>
 void doTransform(
     const cras_geo_msgs::msg::Polygon64Collection& data_in, cras_geo_msgs::msg::Polygon64Collection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -236,8 +226,7 @@ void doTransform(
     const cras_geo_msgs::msg::Polygon64InstanceCollection& data_in,
     cras_geo_msgs::msg::Polygon64InstanceCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -250,8 +239,7 @@ void doTransform(
     const cras_geo_msgs::msg::Polygon64InstanceStampedCollection& data_in,
     cras_geo_msgs::msg::Polygon64InstanceStampedCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {
@@ -264,8 +252,7 @@ void doTransform(
     const cras_geo_msgs::msg::Polygon64StampedCollection& data_in,
     cras_geo_msgs::msg::Polygon64StampedCollection& data_out,
     const geometry_msgs::msg::TransformStamped& transform) {
-  data_out.header.stamp = transform.header.stamp;
-  data_out.header.frame_id = transform.child_frame_id;
+  data_out.header = transform.header;
   data_out.colors = data_in.colors;
   data_out.polygons.reserve(data_in.polygons.size());
   for (auto& polygon : data_in.polygons) {

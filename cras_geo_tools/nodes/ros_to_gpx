@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+import datetime
+import gpxpy
+import sys
+from typing import Optional
+
+import cras
+from cras_geo_msgs.msg import GeoPolygon2DCollection
+import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.logging import get_logger
+from rclpy.qos import DurabilityPolicy, QoSProfile
+from rclpy.utilities import remove_ros_args
+
+
+class RosToGpx(cras.Node):
+    def __init__(self, gpx_file: Optional[str] = None):
+        super().__init__('ros_to_gpx')
+
+        self.gpx_file = gpx_file if gpx_file is not None else \
+            self.declare_parameter('gpx_file', rclpy.Parameter.Type.STRING).value
+
+        if self.gpx_file is None:
+            self.get_logger().fatal('GPX file not specified')
+            sys.exit(1)
+
+        self.sub = self.create_subscription(
+            GeoPolygon2DCollection, 'polygons_wgs84', self.on_msg,
+            QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+
+        self.get_logger().info(f'ros_to_gps started, writing to {self.gpx_file}')
+
+    def on_msg(self, msg: GeoPolygon2DCollection):
+        gpx = gpxpy.gpx.GPX()
+
+        num_points = 0
+        gpx.time = datetime.datetime.fromtimestamp(msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9)
+        for polygon in msg.polygons:
+            track = gpxpy.gpx.GPXTrack()
+            segment = gpxpy.gpx.GPXTrackSegment()
+
+            for point in polygon.points:
+                gpx_point = gpxpy.gpx.GPXTrackPoint(point.latitude, point.longitude, point.altitude)
+                segment.points.append(gpx_point)
+                num_points += 1
+
+            track.segments.append(segment)
+            gpx.tracks.append(track)
+
+        try:
+            with open(self.gpx_file, 'w') as f:
+                xml = gpx.to_xml()
+                f.write(xml)
+            self.get_logger().info(f'Written {num_points} points into GPX {self.gpx_file}')
+        except gpxpy.mod_gpx.GPXException as e:
+            self.get_logger().fatal(f'Failed to parse GPX file: {e}')
+            sys.exit(1)
+        except IOError:
+            self.get_logger().fatal(f'Failed to write GPX file: {self.gpx_file}')
+            sys.exit(1)
+
+
+def main(args=sys.argv[1:]):
+    gpx_file = None
+    if args is not None:
+        args = remove_ros_args(args)
+        if len(args) == 1:
+            gpx_file = args[0]
+        elif len(args) > 1:
+            get_logger('ros_to_gpx').fatal('Invalid arguments. Usage: ros_to_gpx [<gpx_file>]')
+            sys.exit(1)
+    try:
+        with cras.init(), RosToGpx(gpx_file) as node:
+            rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+
+
+if __name__ == '__main__':
+    main()

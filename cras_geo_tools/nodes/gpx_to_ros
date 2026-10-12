@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+import gpxpy
+import sys
+from typing import Optional
+
+import cras
+from cras_geo_msgs.msg import GeoPolygon2D, GeoPolygon2DCollection
+from geographic_msgs.msg import GeoPoint
+import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.logging import get_logger
+from rclpy.qos import DurabilityPolicy, QoSProfile
+from rclpy.utilities import remove_ros_args
+
+
+class GpxToRos(cras.Node):
+    def __init__(self, gpx_file: Optional[str] = None):
+        super().__init__('gpx_to_ros')
+
+        self.gpx_file = gpx_file if gpx_file is not None else \
+            self.declare_parameter('gpx_file', rclpy.Parameter.Type.STRING).value
+
+        if self.gpx_file is None:
+            self.get_logger().fatal('GPX file not specified')
+            sys.exit(1)
+
+        self.msg = GeoPolygon2DCollection()
+        self.msg.header.frame_id = 'wgs84'
+        self.msg.header.stamp = self.get_clock().now().to_msg()
+
+        try:
+            with open(self.gpx_file, 'r') as f:
+                gpx = gpxpy.parse(f)
+                for track in gpx.tracks:
+                    polygon = GeoPolygon2D()
+                    for segment in track.segments:
+                        for point in segment.points:
+                            geo_point = GeoPoint(
+                                latitude=point.latitude, longitude=point.longitude, altitude=point.elevation)
+                            polygon.points.append(geo_point)
+                    self.msg.polygons.append(polygon)
+        except gpxpy.mod_gpx.GPXException as e:
+            self.get_logger().fatal(f'Failed to parse GPX file: {e}')
+            sys.exit(1)
+        except IOError:
+            self.get_logger().fatal(f'Failed to open GPX file: {self.gpx_file}')
+            sys.exit(1)
+
+        self.pub = self.create_publisher(
+            GeoPolygon2DCollection, 'polygons_wgs84', QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+
+        self.pub.publish(self.msg)
+
+        self.get_logger().info(f'gpx_to_ros started, publishing {len(self.msg.polygons)} polygons')
+
+
+def main(args=sys.argv[1:]):
+    gpx_file = None
+    if args is not None:
+        args = remove_ros_args(args)
+        if len(args) == 1:
+            gpx_file = args[0]
+        elif len(args) > 1:
+            get_logger('gpx_to_ros').fatal('Invalid arguments. Usage: gpx_to_ros [<gpx_file>]')
+            sys.exit(1)
+    try:
+        with cras.init(), GpxToRos(gpx_file) as node:
+            rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+
+
+if __name__ == '__main__':
+    main()

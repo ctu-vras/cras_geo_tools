@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+SPDX-License-Identifier: BSD-3-Clause
+SPDX-FileCopyrightText: Czech Technical University in Prague
+-->
+
+<launch>
+  <arg name="ecef_frame" default="ecef"/>
+  <arg name="planar_frame" default="map"/>
+  <arg name="latch" default="true"/>
+
+  <arg name="test" default="false" />
+
+  <node pkg="cras_geo_tools" exec="spherical_to_planar_polygon_collection" name="cras_geo_tools" output="screen">
+    <param name="ecef_frame" value="$(var ecef_frame)"/>
+    <param name="planar_frame" value="$(var planar_frame)"/>
+    <param name="latch" value="$(var latch)"/>
+    <remap from="planar" to="polygons" />
+    <remap from="spherical" to="polygons_wgs84" />
+  </node>
+
+  <group if="$(var test)">
+    <node pkg="tf2_ros" exec="static_transform_publisher" name="tf1" output="screen"
+          args="--frame-id ecef --child-frame-id $(var planar_frame) --x 3972214.0 --y 1019383.0 --z 4869055.0"/>
+    <node pkg="tf2_ros" exec="static_transform_publisher" name="tf2" output="screen"
+          args="--frame-id $(var planar_frame) --child-frame-id base_link --x 1.0"/>
+    <node pkg="rviz2" exec="rviz2" name="rviz" output="screen"
+          args="-d $(find-pkg-share rviz_zone_of_interest_tool)/rviz/polygons.rviz -f base_link"/>
+  </group>
+</launch>

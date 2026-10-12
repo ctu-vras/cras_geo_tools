@@ -138,6 +138,8 @@ target_link_libraries(spherical_to_planar
 )
 rclcpp_components_register_node(spherical_to_planar PLUGIN "cras_geo_tools::SphericalToPlanarPolygonStamped"
   EXECUTABLE spherical_to_planar_polygon_stamped)
+rclcpp_components_register_node(spherical_to_planar PLUGIN "cras_geo_tools::SphericalToPlanarPolygonCollection"
+  EXECUTABLE spherical_to_planar_polygon_collection)
 list(APPEND EXPORTED_LIBS spherical_to_planar)
 
 add_library(cartesian_to_spherical SHARED nodes/cartesian_to_spherical.cpp)
@@ -197,6 +199,11 @@ rclcpp_components_register_node(planar_to_spherical PLUGIN "cras_geo_tools::Plan
   EXECUTABLE planar_to_spherical_polygon_collection)
 list(APPEND EXPORTED_LIBS planar_to_spherical)
 
+install(PROGRAMS
+  nodes/gpx_to_ros
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME}/)
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
 
@@ -222,6 +229,7 @@ if(BUILD_TESTING)
   find_package(cras_lint REQUIRED)
   cras_lint_common()
   cras_lint_cpp()
+  cras_lint_py()
 
   find_package(ament_cmake_gtest REQUIRED)
 
