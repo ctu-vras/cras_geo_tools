@@ -5,6 +5,8 @@
 
 import datetime
 import gpxpy
+from pathlib import Path
+import shutil
 import sys
 from typing import Optional
 
@@ -27,6 +29,10 @@ class RosToGpx(cras.Node):
         if self.gpx_file is None:
             self.get_logger().fatal('GPX file not specified')
             sys.exit(1)
+
+        self.gpx_file = Path(self.gpx_file)
+        if not self.gpx_file.parent.exists():
+            self.gpx_file.parent.mkdir(parents=True)
 
         self.sub = self.create_subscription(
             GeoPolygon2DCollection, 'polygons_wgs84', self.on_msg,
@@ -52,6 +58,8 @@ class RosToGpx(cras.Node):
             gpx.tracks.append(track)
 
         try:
+            if self.gpx_file.exists():
+                shutil.copy(self.gpx_file, str(self.gpx_file) + '.bak')
             with open(self.gpx_file, 'w') as f:
                 xml = gpx.to_xml()
                 f.write(xml)
